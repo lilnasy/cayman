@@ -1,0 +1,41 @@
+{
+    "name": "cayman",
+    "version": "1.0.0",
+    "description": "The fast framework for building content-rich static websites with React.",
+    "private": true,
+    "type": "module",
+    "bin": "bin.js",
+    "files": [
+        "bin.js",
+        "cli.ts",
+        "config.ts",
+        "module-hooks.js",
+        "serve.ts",
+        "tsconfig.project.json",
+        "types.d.ts",
+        "esbuild-config/*",
+        "plugins/*",
+        "runtime/*"
+    ],
+    "exports": {
+        "./config": "./config.ts",
+        "./tsconfig": "./tsconfig.project.json",
+        "./HeadElements": "./runtime/HeadElements.tsx"
+    },
+    "dependencies": {
+        "@hono/node-server": "^1.13.8",
+        "es-module-lexer": "^1.6.0",
+        "esbuild": "^0.25.0",
+        "mime": "^4.0.6"
+    },
+    "peerDependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.13.4",
+        "@types/react": "^19.0.8",
+        "@types/react-dom": "^19.0.3",
+        "typescript": "5.8.0-beta"
+    }
+}
