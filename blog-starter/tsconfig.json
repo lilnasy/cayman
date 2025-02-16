@@ -1,0 +1,12 @@
+{
+    "extends": "../tsconfig.json",
+    "include": [
+        "./.cayman/types/**/*.d.ts",
+        "./pages/**/*.tsx",
+    ],
+    "compilerOptions": {
+        "baseUrl": ".",
+        "jsx": "react-jsx",
+        "jsxImportSource": "react"
+    },
+}
