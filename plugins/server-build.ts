@@ -115,7 +115,7 @@ function createServerModule(headStorageOutput: string, pageOutputs: PageOutput[]
         import { fileURLToPath } from "node:url"
         import { mime } from "cayman/runtime/server"
         import { headStorage } from "../../${headStorageOutput}"
-        import { renderToReadableStream } from "react-dom/server.edge"
+        import { renderToReadableStream } from "react-dom/server"
 
         const staticFiles = new Set()
         readdir(new URL(import.meta.resolve("../site")), { withFileTypes: true, recursive: true }).then(dirEntries => {

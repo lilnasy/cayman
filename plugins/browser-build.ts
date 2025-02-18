@@ -37,7 +37,6 @@ export default function (ctx: PluginContext) {
                 ) {
                     return {
                         path: join(resolve.resolveDir, resolve.path),
-                        suffix: "?interactive",
                         pluginData: resolve,
                     }
                 }
@@ -53,7 +52,7 @@ export default function (ctx: PluginContext) {
             })
 
             build.onLoad({ filter: /\.(t|j)sx$/ }, async load => {
-                if (load.suffix === "?interactive") {
+                if (load.with.interactive === "true") {
                     // resolve the file so we can get the exports and turn them
                     // into "islands".
                     // Islands are components that can be referenced by the client.
@@ -87,7 +86,7 @@ export default function (ctx: PluginContext) {
                         const wrapperName = `Hydratable${i === 0 ? "" : String(i)}`
                         return [
                             `import { "${e.n}" as ${componentName} } from "${load.pluginData.path}"`,
-                            `function ${wrapperName} ({ preload, ...props}) {`,
+                            `function ${wrapperName} ({ preload, ...props }) {`,
                             `    const importName = "${e.n}" === "default" ? null : "${e.n}"`,
                             `    const { url, dependencies } = islandEntrypoints["${absoluteIslandPath}"]`,
                             `    const props_ = Object.keys(props).length > 0 ? serializeProps(props) : null`,
