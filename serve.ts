@@ -1,4 +1,6 @@
-import { open, readdir } from "node:fs/promises"
+import { createReadStream } from "node:fs"
+import { readdir } from "node:fs/promises"
+import { Readable } from "node:stream"
 import { join, relative } from "node:path"
 import mime from "mime"
 import { serve } from "@hono/node-server"
@@ -22,10 +24,9 @@ serve({
         const indexHtml = staticFiles.has(pathname.endsWith("/") ? (pathname + "index.html") : (pathname + "/index.html"))
         if (staticFile || indexHtml) {
             const filePath = join(process.cwd(), ".cayman/site", pathname, indexHtml ? "index.html" : "")
-            const file = await open(filePath)
             const contentType = mime.getType(filePath)
             const headers = contentType ? { "Content-Type": contentType } : {}
-            return new Response(file.readableWebStream({ type: "bytes" }), { headers })
+            return new Response(Readable.toWeb(createReadStream(filePath)), { headers })
         }
         return new Response("Not found", { status: 404 })
     },

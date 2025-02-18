@@ -11,7 +11,6 @@ const defaultServerConfig = {
     target: "es2024",
     outdir: ".cayman/builder",
     packages: "external",
-    conditions: ["react-server"],
     define: {
         "import.meta.server": "true",
         "import.meta.browser": "false",

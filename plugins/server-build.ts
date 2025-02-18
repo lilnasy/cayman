@@ -110,12 +110,14 @@ export default function (ctx: PluginContext) {
 
 function createServerModule(headStorageOutput: string, pageOutputs: PageOutput[]) {
     return `
-        import { open, readdir } from "node:fs/promises"
+        import { createReadStream } from "node:fs"
+        import { Readable } from "node:stream"
+        import { readdir } from "node:fs/promises"
         import { relative } from "node:path"
         import { fileURLToPath } from "node:url"
         import { mime } from "cayman/runtime/server"
         import { headStorage } from "../../${headStorageOutput}"
-        import { renderToReadableStream } from "react-dom/server"
+        import { renderToReadableStream } from "react-dom/server.edge"
 
         const staticFiles = new Set()
         readdir(new URL(import.meta.resolve("../site")), { withFileTypes: true, recursive: true }).then(dirEntries => {
@@ -129,8 +131,8 @@ function createServerModule(headStorageOutput: string, pageOutputs: PageOutput[]
             async fetch(request) {
                 const { pathname } = new URL(request.url)
                 if (staticFiles.has(pathname)) {
-                    const file = await open(new URL(import.meta.resolve("../site" + pathname)))
-                    return new Response(file.readableWebStream({ type: "bytes" }), {
+                    const fileUrl = new URL(import.meta.resolve("../site" + pathname))
+                    return new Response(Readable.toWeb(createReadStream(fileUrl)), {
                         headers: {
                             "Content-Type": mime.getType(pathname)
                         }
