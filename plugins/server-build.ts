@@ -113,6 +113,7 @@ function createServerModule(headStorageOutput: string, pageOutputs: PageOutput[]
         import { open, readdir } from "node:fs/promises"
         import { relative } from "node:path"
         import { fileURLToPath } from "node:url"
+        import { mime } from "cayman/runtime/server"
         import { headStorage } from "../../${headStorageOutput}"
         import { renderToReadableStream } from "react-dom/server.edge"
 
@@ -129,9 +130,9 @@ function createServerModule(headStorageOutput: string, pageOutputs: PageOutput[]
                 const { pathname } = new URL(request.url)
                 if (staticFiles.has(pathname)) {
                     const file = await open(new URL(import.meta.resolve("../site" + pathname)))
-                    return new Response(file.readableWebStream({ type: contentType(pathname) }), {
+                    return new Response(file.readableWebStream({ type: "bytes" }), {
                         headers: {
-                            "Content-Type": contentType(pathname)
+                            "Content-Type": mime.getType(pathname)
                         }
                     })
                 }
@@ -178,16 +179,5 @@ pageOutputs.map(e => `
                 return new Response("Not Found", { status: 404 })
             }
         }
-    
-        function contentType(path) {
-            if (path.endsWith(".css")) {
-                return "text/css"
-            } else if (path.endsWith(".woff2")) {
-                return "font/woff2"
-            } else if (path.endsWith(".js")) {
-                return "application/javascript"
-            } else if (path.endsWith(".json") || path.endsWith(".webmanifest")) {
-                return "application/json"
-            }
-        }`.replaceAll("\n        ", "\n")
+        `.replaceAll("\n        ", "\n")
 }

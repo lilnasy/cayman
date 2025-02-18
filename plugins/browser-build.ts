@@ -198,5 +198,8 @@ async function restartServer() {
     if (server) {
         await new Promise(resolve => server!.close(resolve))
     }
-    server = serve(serverModule.default)
+    server = serve(
+        { fetch: serverModule.default, overrideGlobalObjects: false },
+        address => console.log(`Server is running on ${address.address}:${address.port}`)
+    )
 }

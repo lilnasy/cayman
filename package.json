@@ -20,7 +20,8 @@
     "exports": {
         "./config": "./config.ts",
         "./tsconfig": "./tsconfig.project.json",
-        "./HeadElements": "./runtime/HeadElements.tsx"
+        "./HeadElements": "./runtime/HeadElements.tsx",
+        "./runtime/server": "./runtime/server.js"
     },
     "dependencies": {
         "@hono/node-server": "^1.13.8",

@@ -28,5 +28,6 @@ serve({
             return new Response(file.readableWebStream({ type: "bytes" }), { headers })
         }
         return new Response("Not found", { status: 404 })
-    }
+    },
+    overrideGlobalObjects: false
 }, address => console.log(`Server is running on localhost:${address.port}`))

@@ -1,5 +1,4 @@
 /// <reference lib="dom" />
-import { startTransition } from "react"
 import { hydrateRoot } from "react-dom/client"
 import { createElement } from "react"
 
@@ -23,9 +22,7 @@ customElements.define("interactive-component", class extends HTMLElement {
                 console.error(`Component "${importName || "default"}" not found in module ${url}`)
                 return
             }
-            startTransition(() => {
-                hydrateRoot(this, createElement(Component, props))
-            })
+            hydrateRoot(this, createElement(Component, props))
         } catch (error) {
             console.error("Error hydrating component:", error)
         }
