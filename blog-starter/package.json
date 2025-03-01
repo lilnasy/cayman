@@ -8,7 +8,7 @@
     },
     "dependencies": {
         "@tailwindcss/postcss": "^4.0.6",
-        "cayman": "github:lilnasy/cayman",
+        "cayman": "workspace:*",
         "date-fns": "^4.1.0",
         "gray-matter": "^4.0.3",
         "postcss": "^8.5.2",

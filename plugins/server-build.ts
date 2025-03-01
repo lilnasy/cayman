@@ -30,12 +30,35 @@ export default function (ctx: PluginContext) {
                     external: false
                 }
             })
+            // package: external also implies css import statements are kept as external
+            // we de-externalize them here
+            build.onResolve({ filter: /\.css$/ }, async args => {
+                if (args.pluginData === "breakloop") {
+                    return
+                }
+                const resolved = await build.resolve(args.path, {
+                    kind: args.kind,
+                    importer: args.importer,
+                    resolveDir: args.resolveDir,
+                    pluginData: "breakloop"
+                })
+                // When packages are configured to externalized, resolving
+                // them will result in the path remaining unchanged.
+                // So we use import.meta.resolve instead.
+                const path = resolved.path === args.path
+                    ? fileURLToPath(import.meta.resolve(args.path))
+                    : resolved.path
+                return {
+                    path,
+                    external: false,
+                }
+            })
             build.onEnd(async ({ errors, metafile }: BuildResult) => {
                 if (errors.length > 0) {
                     return
                 }
 
-                const { outputs } = metafile!                
+                const { outputs } = metafile!
                 const pageOutputs: PageOutput[] = []
                 const staticFiles: string[] = []
 
@@ -49,7 +72,10 @@ export default function (ctx: PluginContext) {
                 mkdirSync(".cayman/site/_cayman", { recursive: true })
                 for (const outputPath in outputs) {
                     const output = outputs[outputPath]
-                    if (output?.entryPoint) {
+                    if (output && output.entryPoint === headStorageEntrypoint) {
+                        headStorageOutput = outputPath
+                    }
+                    if (output && output.entryPoint && output.entryPoint.startsWith("pages")) {
                         const { entryPoint, cssBundle } = output
 
                         const cssUrl = cssBundle
@@ -60,25 +86,21 @@ export default function (ctx: PluginContext) {
                             ? "/"
                             : entryPoint.replace(/^pages/, "").replace(/\.tsx$/, "")
 
-                        if (entryPoint === headStorageEntrypoint) {
-                            headStorageOutput = outputPath
-                        } else {
-                            const regexp =
-                                "^" +
-                                route
-                                    .replaceAll(/\[\.\.\.([^\]]+)\]/g, (_: string, group: string) => `(?<${group.replace(/^\.\.\./, "")}>.+)`)
-                                    .replaceAll(/\[([^\]]+)\]/g, (_: string, group: string) =>  `(?<${group}>[^/]+)`)
-                                    .replaceAll("/", "\\/") +
-                                "$"
+                        const regexp =
+                            "^" +
+                            route
+                                .replaceAll(/\[\.\.\.([^\]]+)\]/g, (_: string, group: string) => `(?<${group.replace(/^\.\.\./, "")}>.+)`)
+                                .replaceAll(/\[([^\]]+)\]/g, (_: string, group: string) =>  `(?<${group}>[^/]+)`)
+                                .replaceAll("/", "\\/") +
+                            "$"
 
-                            pageOutputs.push({
-                                route,
-                                regexp,
-                                outputPath,
-                                path: outputPath.replace(".cayman/builder/", "./"),
-                                cssUrl,
-                            })
-                        }
+                        pageOutputs.push({
+                            route,
+                            regexp,
+                            outputPath,
+                            path: outputPath.replace(".cayman/builder/", "./"),
+                            cssUrl,
+                        })
                     }
 
                     if (
@@ -89,7 +111,7 @@ export default function (ctx: PluginContext) {
                         staticFiles.push(outputPath.replace(".cayman/builder", "/_cayman"))
                     }
                 }
-            
+
                 if (pageOutputs.length === 0) {
                     console.error("No pages found, stopping the build.")
                     return
@@ -117,15 +139,20 @@ function createServerModule(headStorageOutput: string, pageOutputs: PageOutput[]
         import { fileURLToPath } from "node:url"
         import { mime } from "cayman/runtime/server"
         import { headStorage } from "../../${headStorageOutput}"
+        import { createElement } from "react"
         import { renderToReadableStream } from "react-dom/server.edge"
 
         const staticFiles = new Set()
         readdir(new URL(import.meta.resolve("../site")), { withFileTypes: true, recursive: true }).then(dirEntries => {
             for (const entry of dirEntries) {
                 if (entry.isFile() == false) continue
-                staticFiles.add("/" + relative(fileURLToPath(import.meta.resolve("../site")), entry.parentPath).replaceAll("\\\\", "/") + "/" + entry.name)
+                staticFiles.add(prependSlash(relative(fileURLToPath(import.meta.resolve("../site")), entry.parentPath).replaceAll("\\\\", "/") + "/" + entry.name))
             }
         })
+
+        function prependSlash(path) {
+            return path.startsWith("/") ? path : "/" + path
+        }
 
         export default {
             async fetch(request) {
@@ -166,9 +193,9 @@ pageOutputs.map(e => `
                     if (match) {
                         const pageModule = await import("${e.path}")
                         const params = match.groups ?? {}
-                        const jsxNode = pageModule.default({ params })
                         ${e.cssUrl ? `head.push({ element: "link", rel: "stylesheet", href: "${e.cssUrl}" })` : ``}
-                        const stream = headStorage.run(head, renderToReadableStream, jsxNode instanceof Promise ? await jsxNode : jsxNode)
+                        const jsxNode = createElement(pageModule.default, { params })
+                        const stream = headStorage.run(head, renderToReadableStream, jsxNode)
                         return new Response(await stream, {
                             headers: {
                                 "Content-Type": "text/html",

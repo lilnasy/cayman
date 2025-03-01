@@ -4,8 +4,8 @@ import type { PluginContext } from "../types.d.ts"
 
 const defaultBrowserConfig = {
     platform: "browser",
-    target: "es2021",
-    // minify: true,
+    target: "esnext",
+    minify: true,
     outdir: ".cayman/site/_cayman",
     define: {
         "import.meta.server": "false",

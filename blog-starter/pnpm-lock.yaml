@@ -13,7 +13,7 @@ importers:
         version: 4.0.6
       cayman:
         specifier: github:lilnasy/cayman
-        version: https://codeload.github.com/lilnasy/cayman/tar.gz/3e6fe7b0915063b6864f0cd72175f2f1ef156936(hono@4.7.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+        version: https://codeload.github.com/lilnasy/cayman/tar.gz/30d70e714d1bf19660aeea84aedfdb9e34eb1e80(hono@4.7.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -325,8 +325,8 @@ packages:
   bail@2.0.2:
     resolution: {integrity: sha512-0xO6mYd7JB2YesxDKplafRpsiOzPt9V02ddPCLbY1xYGPOX24NTyN50qnUxgCPcSoYMhKpAuBTjQoRZCAkUDRw==}
 
-  cayman@https://codeload.github.com/lilnasy/cayman/tar.gz/3e6fe7b0915063b6864f0cd72175f2f1ef156936:
-    resolution: {tarball: https://codeload.github.com/lilnasy/cayman/tar.gz/3e6fe7b0915063b6864f0cd72175f2f1ef156936}
+  cayman@https://codeload.github.com/lilnasy/cayman/tar.gz/30d70e714d1bf19660aeea84aedfdb9e34eb1e80:
+    resolution: {tarball: https://codeload.github.com/lilnasy/cayman/tar.gz/30d70e714d1bf19660aeea84aedfdb9e34eb1e80}
     version: 1.0.0
     hasBin: true
     peerDependencies:
@@ -887,7 +887,7 @@ snapshots:
 
   bail@2.0.2: {}
 
-  cayman@https://codeload.github.com/lilnasy/cayman/tar.gz/3e6fe7b0915063b6864f0cd72175f2f1ef156936(hono@4.7.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
+  cayman@https://codeload.github.com/lilnasy/cayman/tar.gz/30d70e714d1bf19660aeea84aedfdb9e34eb1e80(hono@4.7.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
     dependencies:
       '@hono/node-server': 1.13.8(hono@4.7.1)
       es-module-lexer: 1.6.0

@@ -1,12 +1,12 @@
 # Cayman
 
-A fast toy framework for building static websites with React. Cayman focuses on build performance, and granular interactivity. See the blog post for more details.
+Cayman is a small, hackable framework for a fun web. It focuses on keeping the internals simple, minimizing unnecessary work, and .
 
 ## Features
 
-- 🚀 **Fast Build Times**: Optimized build process using esbuild
-- 🎯 **Zero-js by default**: You control when components are interactive.
-- ⚡ **Instant Preview**: The dev mode performs a production build within a second, leaving no differences between preview and production.
+- 🚀 **Fast Build Times**: Optimized build process using esbuild.
+- 🎯 **Zero-js by default**: You control which components are for templating and which become interactive.
+- ⚡ **Instant Preview**: The dev command performs a production build within a second, you won't have to say "but it worked on my machine".
 
 ## Quick Start
 
@@ -19,28 +19,48 @@ cd cayman/blog-starter
 npm install
 npm run dev
 ```
-The dev command will start a server that serves your site at `http://localhost:3000`.
+The dev command will perform a full production build instantly, watch all the files for changes, and start a server that can be reached at `http://localhost:3000`.
 
-Generate static pages from your site with the build command:
+Generate static HTML from your site with the build command:
 
 ```bash
 npm run build
 ```
 
+Preview the final build with the serve command:
+
+```bash
+npm run serve
+```
+
+### Starting a new project
+
+Cayman is not on NPM, it must be installed through GitHub.
+
+```bash
+npm init
+npm install github:lilnasy/cayman
+```
+
 ## Project Structure
 
-Cayman will look for the `pages` directory in your project root for tsx files to render into static html. Additionally, it will copy over the `public` directory for static assets. You are free to structure the rest of your project as you want. 
+Cayman will look for the `pages` directory in your project root for tsx files which will be used to render static html. Additionally, it will copy over the `public` directory for static assets. You are free to structure the rest of your project as you want. 
 
 ```
 my-project/
 ├── pages/           # Page components and routes
+│   ├── homepage.tsx
+│   ├── about.tsx
+│   ├── posts
+│   │   └── [slug].tsx
+│   └── [...slug].tsx
 ├── public/          # Static assets
 └── cayman.config.ts # Framework configuration
 ```
 
 ### Configuration
 
-Cayman is configured through the `cayman.config.ts` file. There are no configuration options for cayman itself, all options are passed to esbuild. See the [esbuild docs](https://esbuild.github.io/api/) for the available options. You can configure the server and browser build individually with the `server` and `browser` fields.
+Cayman is configured through the `cayman.config.ts` file.
 
 ```ts
 import { defineConfig } from "cayman/config"
@@ -56,6 +76,8 @@ export default defineConfig({
     }
 })
 ```
+
+All configuration options are passed directly to esbuild. You can configure server and browser builds separately using the `server` and `browser` fields. See the [esbuild docs](https://esbuild.github.io/api/) for the available options.
 
 ### File-based routing
 
@@ -115,6 +137,16 @@ export async function generateStaticParams() {
   ]
 }
 ```
+
+### CSS Support
+
+Cayman supports CSS imports directly in components:
+
+```tsx
+import "../styles/globals.css"
+```
+
+The framework can be extended with CSS processors like PostCSS and Tailwind through esbuild plugins. See the [blog-starter configuration](./blog-starter/cayman.config.ts) for an example.
 
 ## Commands
 

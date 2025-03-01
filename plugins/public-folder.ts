@@ -13,7 +13,9 @@ export default {
 
 async function copyDir(src: string, dest: string) {
     await mkdir(dest, { recursive: true })
-    const entries = await readdir(src, { withFileTypes: true })
+    const entries = await readdir(src, { withFileTypes: true }).catch(() => {})
+
+    if (!entries) return
 
     for (const entry of entries) {
         const srcPath = join(src, entry.name)
@@ -26,5 +28,3 @@ async function copyDir(src: string, dest: string) {
         }
     }
 }
-
-

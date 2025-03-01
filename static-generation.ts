@@ -3,8 +3,9 @@ import { dirname, join } from "node:path"
 import { mkdirSync } from "node:fs"
 import { createWriteStream } from "node:fs"
 import { Writable } from "node:stream"
-import type { PageOutput } from "../types.d.ts"
 import type { AsyncLocalStorage } from "node:async_hooks"
+import { createElement } from "react"
+import type { PageOutput } from "./types.d.ts"
 
 // @ts-ignore
 import { prerender } from "react-dom/static.edge"
@@ -44,7 +45,7 @@ export async function generateStaticPages(headStorageOutput: string, pageoutputs
                 })
             }
 
-            const jsxNode = await pageModule.default({ params })
+            const jsxNode = createElement(pageModule.default, { params })
             const { prelude } = await headStorage.run(head, prerender, jsxNode)
 
             const outputPath = `.cayman/site${pagePath}/index.html`
