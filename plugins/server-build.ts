@@ -81,10 +81,8 @@ export default function (ctx: PluginContext) {
                         const cssUrl = cssBundle
                             ? cssBundle.replace(".cayman/builder", "/_cayman")
                             : undefined
-
-                        const route = entryPoint === "pages/homepage.tsx"
-                            ? "/"
-                            : entryPoint.replace(/^pages/, "").replace(/\.tsx$/, "")
+                        
+                        const route = entryPoint.replace(/^pages/, "").replace(/\/page\.tsx$/, "")
 
                         const regexp =
                             "^" +

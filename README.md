@@ -1,6 +1,6 @@
 # Cayman
 
-Cayman is a small, hackable framework for a fun web. It focuses on keeping the internals simple, minimizing unnecessary work, and .
+Cayman is a small, hackable framework for a fun web. It focuses on keeping the internals simple, and minimizing unnecessary work.
 
 ## Features
 
@@ -49,11 +49,13 @@ Cayman will look for the `pages` directory in your project root for tsx files wh
 ```
 my-project/
 ├── pages/           # Page components and routes
-│   ├── homepage.tsx
-│   ├── about.tsx
-│   ├── posts
-│   │   └── [slug].tsx
-│   └── [...slug].tsx
+│   ├── homepage/
+│   │   └── page.tsx
+│   ├── about/
+│   │   └── page.tsx
+│   └── posts/
+│       └── [slug]/
+│           └── page.tsx
 ├── public/          # Static assets
 └── cayman.config.ts # Framework configuration
 ```
@@ -81,11 +83,13 @@ All configuration options are passed directly to esbuild. You can configure serv
 
 ### File-based routing
 
-Cayman uses file-based routing similar to Next.js:
+Cayman implements a simple file-based routing system:
 
-- `pages/homepage.tsx` → `/index.html`
-- `pages/about.tsx` → `/about/index.html`
-- `pages/posts/[slug].tsx` → `/posts/:slug/index.html`
+- `pages/homepage/page.tsx` → `/index.html`
+- `pages/about/page.tsx` → `/about/index.html`
+- `pages/posts/[slug]/page.tsx` → `/posts/:slug/index.html`
+
+To keep the implementation simple, and projects predictable, no layout routing is performed. Layout components must be explicitly imported in each page similar to any other component.
 
 ### Interactive Components
 
@@ -140,7 +144,7 @@ export default function Layout() {
 Generate static parameters for dynamic routes:
 
 ```tsx
-// pages/posts/[slug].tsx
+// pages/posts/[slug]/page.tsx
 
 export async function generateStaticParams() {
   return [

@@ -25,7 +25,7 @@ export default function (ctx: PluginContext) {
         ...defaultServerConfig,
         ...userCommonConfig,
         ...userServerConfig,
-        entryPoints: ["./pages/**/*.tsx", fileURLToPath(import.meta.resolve("../runtime/head-storage.ts"))],
+        entryPoints: ["./pages/**/page.tsx", fileURLToPath(import.meta.resolve("../runtime/head-storage.ts"))],
         loader: {
             ...defaultCommonConfig.loader,
             // ...defaultServerConfig.loader,

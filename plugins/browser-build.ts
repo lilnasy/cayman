@@ -161,15 +161,8 @@ export default function (ctx: PluginContext) {
             })
 
             build.onEnd(async serverBuildResult => {
-                if (serverBuildResult.errors.length > 0) {
+                if (serverBuildResult.errors.length > 0 || ctx.serverBuild === undefined) {
                     return
-                }
-                if (serverBuildResult.warnings.length > 0) {
-                    for (const warning of serverBuildResult.warnings) {
-                        if (warning.id === "empty-glob") {
-                            return
-                        }
-                    }
                 }
 
                 const clientComponentLoaderEntrypoint = relative(
@@ -205,7 +198,11 @@ export default function (ctx: PluginContext) {
                         {
                             name: "external-client-component-entrypoint-tracker",
                             setup(build) {
-                                const filter = new RegExp(clientComponents.filter(e => e.external === true).map(e => `^${RegExp.escape(e.id)}$`).join("|"))
+                                const externalClientComponents = clientComponents.filter(e => e.external === true)
+                                if (externalClientComponents.length === 0) {
+                                    return
+                                }
+                                const filter = new RegExp(externalClientComponents.map(e => `^${RegExp.escape(e.id)}$`).join("|"))
                                 build.onResolve({ filter }, async resolve => {
                                     if (resolve.pluginData === "breakloop") {
                                         return
