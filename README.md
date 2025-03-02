@@ -103,7 +103,19 @@ export default function Homepage() {
 }
 ```
 
-Interactive components can have the `preload` attribute to eagerly load the code required to make the component interactive.
+Interactive components can have the `preload` prop to eagerly load the code required to make the component interactive.
+
+```tsx
+import Counter from "../components/Counter.tsx" with { interactive: "true" }
+<Counter preload/>
+```
+
+Interactive components can have the `defer` prop to delay hydration until the component enters the viewport. This significantly improves initial page load on large pages with several interactive components.
+
+```tsx
+import Counter from "../components/Counter.tsx" with { interactive: "true" }
+<Counter defer/>
+```
 
 ### Layout
 
@@ -154,4 +166,7 @@ The framework can be extended with CSS processors like PostCSS and Tailwind thro
 - `cayman build` - Generate a static site into the `.cayman/site` directory.
 - `cayman serve` - A static file server for `.cayman/site`.
 
+# Make it your own
+
+Most full-stack frameworks are black boxes of brittle complexity. Cayman is designed to be different. The codebase is small and straightforward, and designed to be forked. See [HACKING.md](./HACKING.md) for explanation of the internals.
 

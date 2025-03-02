@@ -135,11 +135,11 @@ export default function (ctx: PluginContext) {
                         const wrapperName = `Hydratable${i === 0 ? "" : String(i)}`
                         return [
                             `import { "${e.import}" as ${componentName} } from "${e.from}"`,
-                            `function ${wrapperName} ({ preload, ...props }) {`,
+                            `function ${wrapperName} ({ defer, preload, ...props }) {`,
                             `    const importName = "${e.import}" === "default" ? null : "${e.import}"`,
                             `    const { url, dependencies } = clientComponents["${entrypointId}"]`,
                             `    const props_ = Object.keys(props).length > 0 ? serializeProps(props) : null`,
-                            `    return <interactive-component import={importName} url={url} props={props_} dependencies={preload ? null : dependencies.join(" ")}>`,
+                            `    return <interactive-component import={importName} url={url} props={props_} defer={defer ? "" : null} data-dependencies={preload ? null : dependencies.join(" ")}>`,
                             `        <${componentName} {...props}/>`,
                             `        <script type="module" src={clientComponentLoader}></script>`,
                             `        {preload && <link rel="modulepreload" href={url} />}`,
