@@ -11,6 +11,7 @@
         "config.ts",
         "module-hooks.js",
         "serve.ts",
+        "static-generation.ts",
         "tsconfig.project.json",
         "types.d.ts",
         "esbuild-config/*",
