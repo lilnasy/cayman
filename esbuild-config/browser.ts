@@ -5,7 +5,6 @@ import type { PluginContext } from "../types.d.ts"
 const defaultBrowserConfig = {
     platform: "browser",
     target: "esnext",
-    minify: true,
     outdir: ".cayman/site/_cayman",
     define: {
         "import.meta.server": "false",
@@ -19,6 +18,7 @@ export default function (ctx: PluginContext) {
     return {
         ...defaultCommonConfig,
         ...defaultBrowserConfig,
+        minify: ctx.command === "build" ? true : false,
         ...userCommonConfig,
         ...userBrowserConfig,
         loader: {
@@ -34,7 +34,6 @@ export default function (ctx: PluginContext) {
         define: {
             ...defaultCommonConfig.define,
             ...defaultBrowserConfig.define,
-            "process.env.NODE_ENV": "'production'",
             ...userCommonConfig.define,
             ...userBrowserConfig?.define,
         },

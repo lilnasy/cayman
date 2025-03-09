@@ -21,6 +21,7 @@ export default function ({ command }: PluginContext) {
         },
         define: {
             "import.meta.dev": command === "dev" ? "true" : "false",
+            "process.env.NODE_ENV": command === "dev" ? "'development'" : "'production'",
         }
     } as const satisfies BuildOptions
 }

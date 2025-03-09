@@ -5,7 +5,7 @@ import { createElement } from "react"
 customElements.define("interactive-component", class extends HTMLElement {
     async connectedCallback() {
         const url = this.getAttribute("url")
-        const importName = this.getAttribute("import")
+        const importName = this.getAttribute("import") ?? "default"
         const serializedProps = this.getAttribute("props")
         const defer = this.hasAttribute("defer")
         const dependencies = this.getAttribute("dependencies")?.split(" ").filter(Boolean)
@@ -17,14 +17,21 @@ customElements.define("interactive-component", class extends HTMLElement {
 
             const props = serializedProps ? JSON.parse(serializedProps) : {}
             const componentModule = await import(url)
-            const Component = importName ? componentModule[importName] : componentModule.default
+            const Component = componentModule[importName]
 
             if (!Component) {
                 console.error(`Component "${importName || "default"}" not found in module ${url}`)
                 return
             }
             if (defer) {
-                io.observe(this)
+                /**
+                 * The custom element is display: contents, which prevents
+                 * the intersection observer from determining its intersection.
+                 * So we observe the children instead.
+                 */
+                for (const child of this.children) {
+                    io.observe(child)
+                }
                 this.addEventListener("beforevisible", () => {
                     hydrateRoot(this, createElement(Component, props))
                     io.unobserve(this)
@@ -45,7 +52,7 @@ customElements.define("interactive-component", class extends HTMLElement {
 const io = new IntersectionObserver(entries => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-            entry.target.dispatchEvent(new Event("beforevisible"))
+            entry.target.parentElement?.dispatchEvent(new Event("beforevisible"))
         }
     })
 }, { rootMargin: "100%" })

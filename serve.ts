@@ -9,13 +9,9 @@ const staticFiles = new Set()
 readdir(join(process.cwd(), "./.cayman/site"), { withFileTypes: true, recursive: true }).then(dirEntries => {
     for (const entry of dirEntries) {
         if (entry.isFile() == false) continue
-        staticFiles.add(prependSlash(relative(join(process.cwd(), "./.cayman/site"), entry.parentPath).replaceAll("\\", "/") + "/" + entry.name))
+        staticFiles.add((relative(join(process.cwd(), "./.cayman/site"), entry.parentPath).replaceAll("\\", "/") + "/" + entry.name).replace(/^\/?/, "\/"))
     }
 })
-
-function prependSlash(path: string) {
-    return path.startsWith("/") ? path : "/" + path
-}
 
 serve({
     async fetch(request) {

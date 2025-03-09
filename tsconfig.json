@@ -1,29 +1,4 @@
 {
-    "compilerOptions": {
-        // Type Checking
-        "exactOptionalPropertyTypes": true,
-        "noFallthroughCasesInSwitch": true,
-        "noUncheckedIndexedAccess": true,
-        "noUncheckedSideEffectImports": true,
-        "skipLibCheck": true,
-        "strict": true,
-
-        // Module Resolution
-        "allowArbitraryExtensions": true,
-        "allowImportingTsExtensions": true,
-        "baseUrl": ".",
-        "module": "ESNext",
-        "moduleResolution": "bundler",
-        "noEmit": true,
-        "resolveJsonModule": true,
-
-        // Interop Constraints
-        "erasableSyntaxOnly": true,
-        "verbatimModuleSyntax": true,
-
-        // Language and Environment
-        "lib": ["ESNext"],
-        "moduleDetection": "force",
-        "target": "ES2024"
-    }
+    "extends": "./tsconfig.project.json",
+    "include": ["cli.ts"]
 }

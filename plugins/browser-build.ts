@@ -75,12 +75,13 @@ export default function (ctx: PluginContext) {
                 }
             })
 
-            build.onResolve({ filter: /\.js$/ }, resolve => {
-                if (resolve.with.external === "true") {
-                    return {
-                        path: resolve.path,
-                        external: true,
-                    }
+            build.onResolve({ filter: /^BROWSER_ASSETS$/ }, _ => {
+                // a timestamp is added to the module specifier
+                // to prevent an older, previously-loaded version
+                // of the module from being loaded
+                return {
+                    path: "./browser-assets-manifest.js?" + Date.now(),
+                    external: true,
                 }
             })
 
@@ -127,27 +128,27 @@ export default function (ctx: PluginContext) {
                     const serverRuntimeSpecifier = fileURLToPath(import.meta.resolve("../runtime/serialize-props.ts")).replaceAll("\\", "/")
                     const entrypointId = load.pluginData.externalPackage ? load.pluginData.path : relative(process.cwd(), load.path).replaceAll("\\", "/")
 
-                    const contents = [
-                        `import { serializeProps } from "${serverRuntimeSpecifier}"`,
-                        `import { clientComponentLoader, clientComponents } from "./browser-assets.js" with { external: "true" }\n`,
-                    ].join("\n") + "\n" + interactiveImports.flatMap((e, i) => {
+                    const contents = `
+                        import { serializeProps } from "${serverRuntimeSpecifier}"
+                        import { clientComponentLoader, clientComponents } from "BROWSER_ASSETS"
+                        import "cayman/interactive-component.css"
+                        `.replaceAll("\n                        ", "\n") + interactiveImports.map((e, i) => {
                         const componentName = `InteractiveComponent${i === 0 ? "" : String(i)}`
                         const wrapperName = `Hydratable${i === 0 ? "" : String(i)}`
-                        return [
-                            `import { "${e.import}" as ${componentName} } from "${e.from}"`,
-                            `function ${wrapperName} ({ defer, preload, ...props }) {`,
-                            `    const importName = "${e.import}" === "default" ? null : "${e.import}"`,
-                            `    const { url, dependencies } = clientComponents["${entrypointId}"]`,
-                            `    const props_ = Object.keys(props).length > 0 ? serializeProps(props) : null`,
-                            `    return <interactive-component import={importName} url={url} props={props_} defer={defer ? "" : null} data-dependencies={preload ? null : dependencies.join(" ")}>`,
-                            `        <${componentName} {...props}/>`,
-                            `        <script type="module" src={clientComponentLoader}></script>`,
-                            `        {preload && <link rel="modulepreload" href={url} />}`,
-                            `        {preload && dependencies.map((dep, i) => <link key={i} rel="modulepreload" href={dep} />)}`,
-                            `    </interactive-component>`,
-                            `}`,
-                            `export { ${wrapperName} as "${e.import}" }`,
-                        ]
+                        return `
+                            import { "${e.import}" as ${componentName} } from "${e.from}"
+                            function ${wrapperName} ({ defer, preload, ...props }) {
+                                const importName = "${e.import}" === "default" ? null : "${e.import}"
+                                const { url, dependencies } = clientComponents["${entrypointId}"]
+                                const props_ = Object.keys(props).length > 0 ? serializeProps(props) : null
+                                return <interactive-component import={importName} url={url} props={props_} defer={defer ? "" : null} dependencies={preload ? null : dependencies.join(" ")}>
+                                    <${componentName} {...props}/>
+                                    <script type="module" src={clientComponentLoader}></script>
+                                    {preload && <link rel="modulepreload" href={url} />}
+                                    {preload && dependencies.map((dep, i) => <link key={i} rel="modulepreload" href={dep} />)}
+                                </interactive-component>
+                            }
+                            export { ${wrapperName} as "${e.import}" }`.replaceAll("\n                            ", "\n")
                     }).join("\n")
 
                     clientComponents.push(...interactiveImports.map(e => ({ ...e, id: entrypointId })))
@@ -166,7 +167,7 @@ export default function (ctx: PluginContext) {
                 }
 
                 const clientComponentLoaderEntrypoint = relative(
-                    process.cwd(), 
+                    process.cwd(),
                     fileURLToPath(import.meta.resolve("../runtime/client-component-loader.ts"))
                 ).replaceAll("\\", "/")
 
@@ -179,7 +180,7 @@ export default function (ctx: PluginContext) {
 
                 /**
                  * The IDs for project-local components is predictable, so we can pre-populate the map.
-                 * 
+                 *
                  * Finding IDs for external components require module resolution with appropriate export
                  * conditions. We let esbuild do all that, and track its choice with a resolve hook.
                  */
@@ -264,20 +265,19 @@ export default function (ctx: PluginContext) {
                         clientComponentBuiltChunks.push([clientComponent.id, output.replace(".cayman/site", ""), Array.from(preloadableModules)])
                     }
                 }
-                const browserAssets = [
-                    `export const clientComponentLoader = ${JSON.stringify(clientComponentLoaderBuiltChunk)}`,
-                    "",
-                    "export const clientComponents = {",
-                    clientComponentBuiltChunks.map(([id, chunkName, preloadableModules]) => [
-                        `    "${id}": {`,
-                        `        url: "${chunkName}",`,
-                        `        dependencies: [ ${preloadableModules.map(module => `"${module}"`).join(",")} ]`,
-                        `    }`,
-                    ].join("\n")).join(",\n"),
-                    "}",
-                ].join("\n")
+                const browserAssets =
+                    `export const clientComponentLoader = ${JSON.stringify(clientComponentLoaderBuiltChunk)}
 
-                writeFileSync(".cayman/builder/browser-assets.js", browserAssets)
+                    export const clientComponents = {
+                    ${clientComponentBuiltChunks.map(([id, chunkName, preloadableModules]) =>
+                        `    "${id}": {
+                            url: "${chunkName}",
+                            dependencies: [ ${preloadableModules.map(module => `"${module}"`).join(",")} ]
+                        }`
+                    ).join(",\n")}
+                    }`.replaceAll("\n                    ", "\n")
+
+                writeFileSync(".cayman/builder/browser-assets-manifest.js", browserAssets)
 
                 if (ctx.command === "dev") {
                     restartServer()
@@ -292,6 +292,7 @@ export default function (ctx: PluginContext) {
 
 let server: ReturnType<typeof serve> | undefined = undefined
 async function restartServer() {
+    // a timestamp is added to the module specifier to prevent an older, previously-loaded version of the module from being loaded
     const serverModule = await import(pathToFileURL(join(process.cwd(), ".cayman/builder/server.js")).href + "?" + Date.now())
     if (server) {
         await new Promise(resolve => {

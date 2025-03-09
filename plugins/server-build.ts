@@ -81,7 +81,7 @@ export default function (ctx: PluginContext) {
                         const cssUrl = cssBundle
                             ? cssBundle.replace(".cayman/builder", "/_cayman")
                             : undefined
-                        
+
                         const route = entryPoint.replace(/^pages/, "").replace(/\/page\.tsx$/, "")
 
                         const regexp =
@@ -90,7 +90,7 @@ export default function (ctx: PluginContext) {
                                 .replaceAll(/\[\.\.\.([^\]]+)\]/g, (_: string, group: string) => `(?<${group.replace(/^\.\.\./, "")}>.+)`)
                                 .replaceAll(/\[([^\]]+)\]/g, (_: string, group: string) =>  `(?<${group}>[^/]+)`)
                                 .replaceAll("/", "\\/") +
-                            "$"
+                            "\\\/?$"
 
                         pageOutputs.push({
                             route,
@@ -144,13 +144,9 @@ function createServerModule(headStorageOutput: string, pageOutputs: PageOutput[]
         readdir(new URL(import.meta.resolve("../site")), { withFileTypes: true, recursive: true }).then(dirEntries => {
             for (const entry of dirEntries) {
                 if (entry.isFile() == false) continue
-                staticFiles.add(prependSlash(relative(fileURLToPath(import.meta.resolve("../site")), entry.parentPath).replaceAll("\\\\", "/") + "/" + entry.name))
+                staticFiles.add((relative(fileURLToPath(import.meta.resolve("../site")), entry.parentPath).replaceAll("\\\\", "/") + "/" + entry.name).replace(/^\\/?/, "\\/"))
             }
         })
-
-        function prependSlash(path) {
-            return path.startsWith("/") ? path : "/" + path
-        }
 
         export default {
             async fetch(request) {
