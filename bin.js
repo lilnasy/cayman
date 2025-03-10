@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { register } from "node:module"
 
+globalThis.start = performance.now()
+
 /**
  * Node.js now supports typescript without compilation but only
  * for modules within the project, not for node_modules.

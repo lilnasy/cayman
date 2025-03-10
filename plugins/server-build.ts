@@ -21,6 +21,8 @@ export default function (ctx: PluginContext) {
                 function resolve(path: string) {
                     return new URL(import.meta.resolve(path))
                 }
+                console.log("server build start:", performance.now() - globalThis.start + "ms")
+                console.time("server build time taken")
             })
             // we want `noExternal: ["cayman"]`, esbuild doesnt have that
             // so we workaround assuming that node_modules is located in cwd/
@@ -54,6 +56,8 @@ export default function (ctx: PluginContext) {
                 }
             })
             build.onEnd(async ({ errors, metafile }: BuildResult) => {
+                console.log("server build end:", performance.now() - globalThis.start + "ms")
+                console.timeEnd("server build time taken")
                 if (errors.length > 0) {
                     return
                 }

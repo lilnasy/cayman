@@ -191,7 +191,8 @@ export default function (ctx: PluginContext) {
                 }
 
                 const browserBuildOptions = options(ctx)
-
+                console.log("browser build start:", performance.now() - globalThis.start + "ms")
+                console.time("Browser build time taken")
                 const browserBuildResult = await build.esbuild.build({
                     ...browserBuildOptions,
                     plugins: [
@@ -222,6 +223,8 @@ export default function (ctx: PluginContext) {
                     ],
                     entryPoints: clientComponents.map(i => i.id).concat([clientComponentLoaderEntrypoint]),
                 })
+                console.log("browser build end:", performance.now() - globalThis.start + "ms")
+                console.timeEnd("Browser build time taken")
 
                 if (browserBuildResult.errors.length > 0) {
                     return

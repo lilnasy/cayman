@@ -12,10 +12,13 @@ import { prerender } from "react-dom/static.edge"
 declare const prerender: typeof import("react-dom/static").prerender
 
 export async function generateStaticPages(headStorageOutput: string, pageoutputs: PageOutput[]) {
+    console.log("static page generation start:", performance.now() - globalThis.start + "ms")
+    console.time("static page generation time taken")
     const headStorageModule = await import(String(pathToFileURL(join(process.cwd(), "./" + headStorageOutput))))
     const headStorage: AsyncLocalStorage<{}> = headStorageModule.headStorage
-
     for (const entrypoint of pageoutputs) {
+        console.log(`Prerendering ${entrypoint.route || "/"} start:`, performance.now() - globalThis.start + "ms")
+        console.time(`Prerendering ${entrypoint.route || "/"} time taken`)
         const pageModule = await import(String(pathToFileURL(join(process.cwd(), "./" + entrypoint.outputPath))))
 
         let staticParams: Record<string, string>[] = [{}]
@@ -52,5 +55,9 @@ export async function generateStaticPages(headStorageOutput: string, pageoutputs
             mkdirSync(dirname(outputPath), { recursive: true })
             await prelude.pipeTo(Writable.toWeb(createWriteStream(outputPath)))
         }
+        console.timeEnd(`Prerendering ${entrypoint.route || "/"} time taken`)
     }
+    console.log("static page generation end:", performance.now() - globalThis.start + "ms")
+    console.timeEnd("static page generation time taken")
+
 }
