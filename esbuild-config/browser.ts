@@ -18,7 +18,6 @@ export default function (ctx: PluginContext) {
     return {
         ...defaultCommonConfig,
         ...defaultBrowserConfig,
-        minify: ctx.command === "build" ? true : false,
         ...userCommonConfig,
         ...userBrowserConfig,
         loader: {

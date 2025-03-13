@@ -44,7 +44,7 @@ npm install github:lilnasy/cayman
 
 ## Project Structure
 
-Cayman will look for the `pages` directory in your project root for tsx files which will be used to render static html. Additionally, it will copy over the `public` directory for static assets. You are free to structure the rest of your project as you want. 
+Cayman will look for the `pages` directory in your project root for tsx files which will be used to render static html. Additionally, it will copy over the `public` directory for static assets. You are free to structure the rest of your project as you want.
 
 ```
 my-project/
@@ -74,7 +74,7 @@ export default defineConfig({
         target: "chrome100",
     },
     server: {
-        minify: true,
+        sourcemap: true,
     }
 })
 ```
@@ -173,4 +173,3 @@ The framework can be extended with CSS processors like PostCSS and Tailwind thro
 # Make it your own
 
 Most full-stack frameworks are black boxes of brittle complexity. Cayman is designed to be different. The codebase is small and straightforward, and designed to be forked. See [HACKING.md](./HACKING.md) for explanation of the internals.
-
