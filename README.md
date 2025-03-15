@@ -1,6 +1,9 @@
-# Cayman
+<div align="center">
+<img alt="Cayman" width="500" height="168" src="https://github.com/user-attachments/assets/f4b8c4f9-a105-43e2-945c-b50630bc5586"></img>
+</div>
+<h3 align="center">Cayman is a small, hackable framework for a fun web.</h3>
+<p align="center">It focuses on fast builds, simple internals, and optimized output.    </p>
 
-Cayman is a small, hackable framework for a fun web. It focuses on keeping the internals simple, and minimizing unnecessary work.
 
 ## Features
 
