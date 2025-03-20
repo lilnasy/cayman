@@ -11,11 +11,11 @@ import type { PageOutput } from "./types.d.ts"
 import { prerender } from "react-dom/static.edge"
 declare const prerender: typeof import("react-dom/static").prerender
 
-export async function generateStaticPages(headStorageOutput: string, pageoutputs: PageOutput[]) {
+export async function generateStaticPages(headStorageOutput: string, pageOutputs: PageOutput[]) {
     const headStorageModule = await import(String(pathToFileURL(join(process.cwd(), "./" + headStorageOutput))))
     const headStorage: AsyncLocalStorage<{}> = headStorageModule.headStorage
 
-    for (const entrypoint of pageoutputs) {
+    for (const entrypoint of pageOutputs) {
         const pageModule = await import(String(pathToFileURL(join(process.cwd(), "./" + entrypoint.outputPath))))
 
         let staticParams: Record<string, string>[] = [{}]

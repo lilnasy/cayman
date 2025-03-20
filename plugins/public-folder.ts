@@ -1,15 +1,15 @@
 import type { Plugin } from "esbuild"
 import { mkdir, readdir, copyFile } from "node:fs/promises"
 import { join } from "node:path"
-import type { PluginContext } from "../types.d.ts"
+import type { CaymanBundlingContext } from "../types.d.ts"
 
-export default function (ctx: PluginContext) {
+export default function (ctx: CaymanBundlingContext) {
     return {
         name: "public-folder",
         setup(build) {
             if (ctx.command === "build") {
                 build.onEnd(async () => {
-                    await copyDir("public", ".cayman/builder")
+                    await copyDir("public", ".cayman/site")
                 })
             }
         }

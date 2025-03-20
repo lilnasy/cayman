@@ -1,7 +1,7 @@
 import type { BuildOptions } from "esbuild"
-import type { PluginContext } from "../types.d.ts"
+import type { CaymanBundlingContext } from "../types.d.ts"
 
-export default function ({ command }: PluginContext) {
+export default function ({ command }: CaymanBundlingContext) {
     return {
         bundle: true,
         format: "esm",

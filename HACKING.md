@@ -17,8 +17,10 @@ This document outlines the project structure and provides guidance for hacking o
 - [`config.ts`](./config.ts): Implementation of the `cayman/config` module. Exports the `defineConfig` helper function and the `Config` type.
 - [`serve.ts`](./serve.ts): Implementation of the `cayman serve` command. Static file server for built sites. Uses Hono's node adapter (without the Hono router) to provide a "fetch-based" HTTP server API. https://github.com/nodejs/node/issues/42529 has some alternatives.
 - [`static-generation.ts`](./static-generation.ts): Uses the client and server build output to generate static html files. Implements the logic for `generateStaticParams`. Called by [`plugins/browser-build.ts`](./plugins/browser-build.ts) after the browser build is complete.
+- [`dev-server.ts`](./dev-server.ts): The core of `cayman dev` server. Creates a fetch handler that responds to requests with server-rendered content. Used by `browser-build.ts` to start a server when the build completes.
 - [`tsconfig.json`](./tsconfig.json): TypeScript configuration for building Cayman.
 - [`tsconfig.project.json`](./tsconfig.project.json): Recommended TypeScript configuration for projects using Cayman.
+- [`types.d.ts`](./types.d.ts) - Interfaces for internal objects shared across the framework.
 
 ### `/esbuild-config/`
 

@@ -1,6 +1,6 @@
 import commonConfig from "./common.ts"
 import type { BuildOptions } from "esbuild"
-import type { PluginContext } from "../types.d.ts"
+import type { CaymanBundlingContext } from "../types.d.ts"
 
 const defaultBrowserConfig = {
     platform: "browser",
@@ -12,7 +12,7 @@ const defaultBrowserConfig = {
     },
 } as const satisfies BuildOptions
 
-export default function (ctx: PluginContext) {
+export default function (ctx: CaymanBundlingContext) {
     const defaultCommonConfig = commonConfig(ctx)
     const { browser: userBrowserConfig, server: _, ...userCommonConfig } = ctx.config ?? {}
     return {

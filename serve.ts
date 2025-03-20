@@ -22,7 +22,7 @@ serve({
             const filePath = join(process.cwd(), ".cayman/site", pathname, indexHtml ? "index.html" : "")
             const contentType = mime.getType(filePath)
             const headers = contentType ? { "Content-Type": contentType } : {}
-            return new Response(Readable.toWeb(createReadStream(filePath)), { headers })
+            return new Response(createReadStream(filePath), { headers })
         }
         return new Response("Not found", { status: 404 })
     },

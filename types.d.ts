@@ -1,6 +1,6 @@
 import type { Config } from "./config.ts"
 
-export interface PluginContext {
+export interface CaymanBundlingContext {
     command: "build" | "dev"
     config?: Config | undefined
     serverBuild?: ServerBuild
@@ -15,6 +15,5 @@ interface PageOutput {
     route: string
     regexp: string
     outputPath: string
-    path: string
     cssUrl: string | undefined
 }

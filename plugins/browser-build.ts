@@ -6,10 +6,11 @@ import { serve } from "@hono/node-server"
 import { parse } from "es-module-lexer"
 import options from "../esbuild-config/browser.ts"
 import { generateStaticPages } from "../static-generation.ts"
+import { createDevServer } from "../dev-server.ts"
 import type { Plugin } from "esbuild"
-import type { PluginContext } from "../types.d.ts"
+import type { CaymanBundlingContext, PageOutput } from "../types.d.ts"
 
-export default function (ctx: PluginContext) {
+export default function (ctx: CaymanBundlingContext) {
     return {
         name: "browser",
         setup(build) {
@@ -171,7 +172,9 @@ export default function (ctx: PluginContext) {
                     fileURLToPath(import.meta.resolve("../runtime/client-component-loader.ts"))
                 ).replaceAll("\\", "/")
 
-                console.info(styleText("bgGreen", "\n Building browser assets..."))
+                if (ctx.command === "build") {
+                    console.info(styleText("bgGreen", "\n Building browser assets..."))
+                }
 
                 /**
                  * Map from the IDs used by esbuild as the "entryPoint" to the correseponding client component.
@@ -285,7 +288,7 @@ export default function (ctx: PluginContext) {
                 writeFileSync(browserAssetsPath, browserAssets)
 
                 if (ctx.command === "dev") {
-                    restartServer()
+                    restartServer(ctx.serverBuild!.headStorageOutput, ctx.serverBuild!.pageOutputs)
                 } else if (ctx.command === "build") {
                     console.info(styleText("bgGreen", "\n Generating pages..."))
                     await generateStaticPages(ctx.serverBuild!.headStorageOutput, ctx.serverBuild!.pageOutputs)
@@ -296,9 +299,8 @@ export default function (ctx: PluginContext) {
 }
 
 let server: ReturnType<typeof serve> | undefined = undefined
-async function restartServer() {
-    // a timestamp is added to the module specifier to prevent an older, previously-loaded version of the module from being loaded
-    const serverModule = await import(pathToFileURL(join(process.cwd(), ".cayman/dev/server.js")).href + "?" + Date.now())
+async function restartServer(headStorageOutput: string, pageOutputs: PageOutput[]) {
+    const devServer = await createDevServer(headStorageOutput, pageOutputs)
     if (server) {
         await new Promise(resolve => {
             server!.close(resolve)
@@ -307,11 +309,11 @@ async function restartServer() {
         })
     }
     server = serve({
-        fetch(request) {
-            return serverModule.default.fetch(request).catch(logFetchError)
+        async fetch(request) {
+            return await devServer.fetch(request).catch(logFetchError)
         },
         overrideGlobalObjects: false,
-    }, address => console.log(`Server is running on ${address.address}:${address.port}`))
+    }, address => console.log(`Server is running on http://${address.address === "::" ? "localhost" : address.address}:${address.port}`))
 }
 
 declare global {

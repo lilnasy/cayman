@@ -1,16 +1,18 @@
-import { mkdirSync, renameSync, rmSync, writeFileSync, copyFileSync } from "node:fs"
+import { mkdirSync, renameSync, rmSync, copyFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import { relative, join } from "node:path"
 import { styleText } from "node:util"
 import type { Plugin, BuildResult } from "esbuild"
-import type { PageOutput, PluginContext } from "../types.d.ts"
+import type { PageOutput, CaymanBundlingContext } from "../types.d.ts"
 
-export default function (ctx: PluginContext) {
+export default function (ctx: CaymanBundlingContext) {
     return {
         name: "server",
         setup(build) {
             build.onStart(() => {
-                console.info(styleText("bgGreen", "\n Building server assets..."))
+                if (ctx.command === "build") {
+                    console.info(styleText("bgGreen", "\n Building server assets..."))
+                }
                 rmSync(".cayman/builder", { recursive: true, force: true })
                 rmSync(".cayman/site", { recursive: true, force: true })
                 mkdirSync(".cayman/types", { recursive: true })
@@ -97,7 +99,6 @@ export default function (ctx: PluginContext) {
                             route,
                             regexp,
                             outputPath,
-                            path: outputPath.replace(".cayman/builder/", "./").replace(".cayman/dev/", "./"),
                             cssUrl,
                         })
                     }
@@ -120,99 +121,15 @@ export default function (ctx: PluginContext) {
                     return
                 }
 
-                ctx.serverBuild = {
-                    headStorageOutput: headStorageOutput!,
-                    pageOutputs,
+                if (typeof headStorageOutput !== "string") {
+                    throw new Error("Could not find where esbuild output the head storage module. This is a bug in Cayman. Please open an issue describing the conditions that lead to this error.")
                 }
 
-                if (ctx.command === "dev") {
-                    writeFileSync(".cayman/dev/server.js", createServerModule(headStorageOutput!, pageOutputs))
+                ctx.serverBuild = {
+                    headStorageOutput,
+                    pageOutputs,
                 }
             })
         }
     } satisfies Plugin
-}
-
-function createServerModule(headStorageOutput: string, pageOutputs: PageOutput[]) {
-    return `
-        import { createReadStream } from "node:fs"
-        import { Readable } from "node:stream"
-        import { readdir } from "node:fs/promises"
-        import { relative } from "node:path"
-        import { fileURLToPath } from "node:url"
-        import { mime } from "cayman/runtime/server"
-        import { headStorage } from "../../${headStorageOutput}"
-        import { createElement } from "react"
-        import { renderToReadableStream } from "react-dom/server.edge"
-
-        const staticFiles = new Set()
-        readdir(new URL(import.meta.resolve("../site")), { withFileTypes: true, recursive: true }).then(dirEntries => {
-            for (const entry of dirEntries) {
-                if (entry.isFile() == false) continue
-                staticFiles.add((relative(fileURLToPath(import.meta.resolve("../site")), entry.parentPath).replaceAll("\\\\", "/") + "/" + entry.name).replace(/^\\/?/, "\\/"))
-            }
-        })
-
-        readdir(new URL(import.meta.resolve("../../public")), { withFileTypes: true, recursive: true }).then(dirEntries => {
-            for (const entry of dirEntries) {
-                if (entry.isFile() == false) continue
-                staticFiles.add((relative(fileURLToPath(import.meta.resolve("../site")), entry.parentPath).replaceAll("\\\\", "/") + "/" + entry.name).replace(/^\\/?/, "\\/"))
-            }
-        })
-
-        export default {
-            async fetch(request) {
-                const { pathname } = new URL(request.url)
-                if (staticFiles.has(pathname)) {
-                    const fileUrl = new URL(import.meta.resolve("../site" + pathname))
-                    return new Response(Readable.toWeb(createReadStream(fileUrl)), {
-                        headers: {
-                            "Content-Type": mime.getType(pathname)
-                        }
-                    })
-                }
-                if (pathname === "/_health") {
-                    let interval
-                    return new Response(new ReadableStream({
-                        start(controller) {
-                            controller.enqueue(" ")
-                            interval = setInterval(() => controller.enqueue(' '), 5000)
-                        },
-                        cancel() {
-                            clearInterval(interval)
-                        }
-                    }))
-                }
-
-                const head = [{
-                    element: "script",
-                    type: "module",
-                    children: [
-                        "const res = await fetch('/_health')",
-                        "res.text().finally(() => location.reload())"
-                    ].join("\\n")
-                }]
-${
-pageOutputs.map(e => `
-                {
-                    const match = pathname.match(/${e.regexp}/)
-                    if (match) {
-                        const pageModule = await import("${e.path}")
-                        const params = match.groups ?? {}
-                        ${e.cssUrl ? `head.push({ element: "link", rel: "stylesheet", href: "${e.cssUrl}" })` : ``}
-                        const jsxNode = createElement(pageModule.default, { params })
-                        const stream = headStorage.run(head, renderToReadableStream, jsxNode)
-                        return new Response(await stream, {
-                            headers: {
-                                "Content-Type": "text/html",
-                            },
-                        })
-                    }
-                }`
-).join("")
-}
-                return new Response("Not Found", { status: 404 })
-            }
-        }
-        `.replaceAll("\n        ", "\n")
 }
