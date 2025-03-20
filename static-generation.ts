@@ -11,46 +11,55 @@ import type { PageOutput } from "./types.d.ts"
 import { prerender } from "react-dom/static.edge"
 declare const prerender: typeof import("react-dom/static").prerender
 
-export async function generateStaticPages(headStorageOutput: string, pageOutputs: PageOutput[]) {
-    const headStorageModule = await import(String(pathToFileURL(join(process.cwd(), "./" + headStorageOutput))))
+export async function generateStaticPages(root: string, headStorageOutput: string, pageOutputs: PageOutput[]) {
+    const headStorageModule = await import(String(pathToFileURL(join(root, "./" + headStorageOutput))))
     const headStorage: AsyncLocalStorage<{}> = headStorageModule.headStorage
 
-    for (const entrypoint of pageOutputs) {
-        const pageModule = await import(String(pathToFileURL(join(process.cwd(), "./" + entrypoint.outputPath))))
+    for (const page of pageOutputs) {
+        const pageModule = await import(String(pathToFileURL(join(root, "./" + page.outputPath))))
 
         let staticParams: Record<string, string>[] = [{}]
 
-        if (entrypoint.route.includes("[")) {
+        if (page.type === "normal" && page.route.includes("[")) {
             if (!pageModule.generateStaticParams) {
-                console.warn(`Warning: Page ${entrypoint.route} has dynamic parameters but no generateStaticParams export. Skipping...`)
+                console.warn(`Warning: Page ${page.route} has dynamic parameters but no generateStaticParams export. Skipping...`)
                 continue
             }
             staticParams = await pageModule.generateStaticParams()
         }
 
         for (const params of staticParams) {
-            let pagePath = entrypoint.route
-            for (const [key, value] of Object.entries(params)) {
-                pagePath = pagePath
-                    .replace(`[${key}]`, value)
-                    .replace(`[...${key}]`, value)
-            }
-
             const head: ({ element: string } & Record<string, string>)[] = []
-            if (entrypoint.cssUrl) {
+            if (page.cssUrl) {
                 head.push({
                     element: "link",
                     rel: "stylesheet",
-                    href: entrypoint.cssUrl
+                    href: page.cssUrl
                 })
+            }
+
+            let outputPath: string
+
+            if (page.type === "404") {
+                outputPath = ".cayman/site/404.html"
+            } else if (page.type === "normal") {
+                let routeWithParams = ""
+                routeWithParams = page.route
+                    for (const [key, value] of Object.entries(params)) {
+                        routeWithParams = routeWithParams
+                            .replace(`[${key}]`, value)
+                            .replace(`[...${key}]`, value)
+                    }
+                outputPath = `.cayman/site${routeWithParams}/index.html`
+            } else {
+                throw new Error(`Unknown page type`, { cause: page })
             }
 
             const jsxNode = createElement(pageModule.default, { params })
             const { prelude } = await headStorage.run(head, prerender, jsxNode)
 
-            const outputPath = `.cayman/site${pagePath}/index.html`
-            mkdirSync(dirname(outputPath), { recursive: true })
-            await prelude.pipeTo(Writable.toWeb(createWriteStream(outputPath)))
+            mkdirSync(dirname(join(root, outputPath)), { recursive: true })
+            await prelude.pipeTo(Writable.toWeb(createWriteStream(join(root, outputPath))))
         }
     }
 }

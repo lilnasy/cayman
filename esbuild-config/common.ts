@@ -1,20 +1,21 @@
 import type { BuildOptions } from "esbuild"
 import type { CaymanBundlingContext } from "../types.d.ts"
 
-export default function ({ command }: CaymanBundlingContext) {
+export default function ({ command, root }: CaymanBundlingContext) {
     return {
         bundle: true,
         format: "esm",
         legalComments: "linked",
-        logLevel: "warning",
-        sourcemap: command === "dev",
+        logLevel: "error",
         metafile: true,
         splitting: true,
         treeShaking: true,
+        sourcemap: command === "dev",
         minify: command === "build",
-        assetNames: "[hash]",
-        chunkNames: "[hash]",
-        entryNames: "[hash]",
+        absWorkingDir: root,
+        assetNames: command === "dev" ? "[name]-[hash]" : "[hash]",
+        chunkNames: command === "dev" ? "[name]-[hash]" : "[hash]",
+        entryNames: command === "dev" ? "[name]-[hash]" : "[hash]",
         jsx: "automatic",
         jsxImportSource: "react",
         loader: {

@@ -1,6 +1,5 @@
 import { createReadStream } from "node:fs"
 import { readdir } from "node:fs/promises"
-import { Readable } from "node:stream"
 import { join, relative } from "node:path"
 import mime from "mime"
 import { serve } from "@hono/node-server"
@@ -24,6 +23,15 @@ serve({
             const headers = contentType ? { "Content-Type": contentType } : {}
             return new Response(createReadStream(filePath), { headers })
         }
+
+        const notFoundPath = join(process.cwd(), ".cayman/site/404.html")
+        if (staticFiles.has("/404.html")) {
+            return new Response(createReadStream(notFoundPath), { 
+                status: 404,
+                headers: { "Content-Type": "text/html" }
+            })
+        }
+        
         return new Response("Not found", { status: 404 })
     },
     overrideGlobalObjects: false

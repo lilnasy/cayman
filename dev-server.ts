@@ -6,7 +6,7 @@ import mime from "mime"
 import { createElement } from "react"
 // @ts-ignore
 import { renderToReadableStream } from "react-dom/server.edge"
-import type { PageOutput } from "./types.d.ts"
+import type { PageOutput, Servable } from "./types.d.ts"
 
 /**
  * react-dom does not expose `renderToReadableStream` for node.
@@ -15,8 +15,11 @@ import type { PageOutput } from "./types.d.ts"
  */
 declare const renderToReadableStream: typeof import("react-dom/server").renderToReadableStream
 
-export async function createDevServer(headStorageModulePath: string, pageOutputs: PageOutput[]) {
-    const { headStorage } = await loadModule(headStorageModulePath) as typeof import("./runtime/head-storage.ts")
+export async function createDevServable(root: string, headStorageModulePath: string, pageOutputs: PageOutput[]): Promise<Servable> {
+    const { headStorage } = await loadModule(root, headStorageModulePath) as typeof import("./runtime/head-storage.ts")
+
+    const notFoundPage = pageOutputs.find(page => page.type === "404")
+
     return {
         async fetch(request: Request) {
             const { pathname } = new URL(request.url)
@@ -27,7 +30,7 @@ export async function createDevServer(headStorageModulePath: string, pageOutputs
 
             const [ inPublicFolder, inBuiltFolder ] = await Promise.all(
                 ["public", ".cayman/site"]
-                    .map(folder => join(process.cwd(), folder + pathname))
+                    .map(folder => join(root, folder + pathname))
                     .map(path => stat(path)
                         .then(stats => stats.isFile() ? path : undefined)
                         .catch(() => undefined)
@@ -74,22 +77,38 @@ export async function createDevServer(headStorageModulePath: string, pageOutputs
                 src: "/_cayman-browser-refresh.js"
             }]
 
+            let matchedPage: PageOutput | undefined = undefined
+            let matchedParams: Record<string, string> | undefined = undefined
+
             for (const page of pageOutputs) {
-                const match = pathname.match(page.regexp)
+                const match =
+                    page.type === "normal"
+                        ? pathname.match(page.regExp)
+                        : null
+
                 if (match) {
-                    const pageModule = await loadModule(page.outputPath)
-                    const params = match.groups ?? {}
-                    if (page.cssUrl) {
-                        head.push({ element: "link", rel: "stylesheet", href: page.cssUrl })
-                    }
-                    const jsxNode = createElement(pageModule.default, { params })
-                    const stream = headStorage.run(head, renderToReadableStream, jsxNode)
-                    return new Response(await stream, {
-                        headers: {
-                            "Content-Type": "text/html",
-                        },
-                    })
+                    matchedPage = page
+                    matchedParams = match.groups ?? {}
                 }
+            }
+
+            if (matchedPage === undefined && notFoundPage !== undefined) {
+                matchedPage = notFoundPage
+            }
+
+            if (matchedPage) {
+                if (matchedPage.cssUrl) {
+                    head.push({ element: "link", rel: "stylesheet", href: matchedPage.cssUrl })
+                }
+                const pageModule = await loadModule(root, matchedPage.outputPath)
+                const jsxNode = createElement(pageModule.default, { params: matchedParams ?? {} })
+                const stream = headStorage.run(head, renderToReadableStream, jsxNode)
+                return new Response(await stream, {
+                    status: matchedPage.type === "404" ? 404 : 200,
+                    headers: {
+                        "Content-Type": "text/html",
+                    }
+                })
             }
 
             return new Response("Not Found", { status: 404 })
@@ -97,6 +116,6 @@ export async function createDevServer(headStorageModulePath: string, pageOutputs
     }
 }
 
-async function loadModule(path: string) {
-    return await import(String(pathToFileURL(join(process.cwd(), path))))
+async function loadModule(root: string, path: string) {
+    return await import(String(pathToFileURL(join(root, path))))
 }

@@ -1,14 +1,14 @@
 import { join, relative } from "node:path"
 import { readFileSync, writeFileSync } from "node:fs"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
 import { styleText } from "node:util"
 import { serve } from "@hono/node-server"
 import { parse } from "es-module-lexer"
 import options from "../esbuild-config/browser.ts"
 import { generateStaticPages } from "../static-generation.ts"
-import { createDevServer } from "../dev-server.ts"
+import { createDevServable } from "../dev-server.ts"
 import type { Plugin } from "esbuild"
-import type { CaymanBundlingContext, PageOutput } from "../types.d.ts"
+import type { CaymanBundlingContext, Servable } from "../types.d.ts"
 
 export default function (ctx: CaymanBundlingContext) {
     return {
@@ -127,7 +127,7 @@ export default function (ctx: CaymanBundlingContext) {
                         }
                     }
                     const serverRuntimeSpecifier = fileURLToPath(import.meta.resolve("../runtime/serialize-props.ts")).replaceAll("\\", "/")
-                    const entrypointId = load.pluginData.externalPackage ? load.pluginData.path : relative(process.cwd(), load.path).replaceAll("\\", "/")
+                    const entrypointId = load.pluginData.externalPackage ? load.pluginData.path : relative(ctx.root, load.path).replaceAll("\\", "/")
 
                     const contents = `
                         import { serializeProps } from "${serverRuntimeSpecifier}"
@@ -168,12 +168,14 @@ export default function (ctx: CaymanBundlingContext) {
                 }
 
                 const clientComponentLoaderEntrypoint = relative(
-                    process.cwd(),
+                    ctx.root,
                     fileURLToPath(import.meta.resolve("../runtime/client-component-loader.ts"))
                 ).replaceAll("\\", "/")
 
                 if (ctx.command === "build") {
-                    console.info(styleText("bgGreen", "\n Building browser assets..."))
+                    if (ctx.testing === undefined) {
+                        console.info(styleText("bgGreen", "\n Building browser assets..."))
+                    }
                 }
 
                 /**
@@ -217,7 +219,7 @@ export default function (ctx: CaymanBundlingContext) {
                                         resolveDir: resolve.resolveDir,
                                         pluginData: "breakloop"
                                     })
-                                    clientComponentsMap.set(relative(process.cwd(), resolved.path).replaceAll("\\", "/"), clientComponents.find(e => e.id === resolve.path)!)
+                                    clientComponentsMap.set(relative(ctx.root, resolved.path).replaceAll("\\", "/"), clientComponents.find(e => e.id === resolve.path)!)
                                     return resolved
                                 })
                             }
@@ -268,7 +270,8 @@ export default function (ctx: CaymanBundlingContext) {
                         clientComponentBuiltChunks.push([clientComponent.id, output.replace(".cayman/site", ""), Array.from(preloadableModules)])
                     }
                 }
-                const browserAssets =
+
+                const browserAssetsModuleContent =
                     `export const clientComponentLoader = ${JSON.stringify(clientComponentLoaderBuiltChunk)}
 
                     export const clientComponents = {
@@ -280,18 +283,25 @@ export default function (ctx: CaymanBundlingContext) {
                     ).join(",\n")}
                     }`.replaceAll("\n                    ", "\n")
 
-                const browserAssetsPath =
+                const browserAssetsModulePath =
                     ctx.command === "dev"
                         ? ".cayman/dev/browser-assets-manifest.js"
                         : ".cayman/builder/browser-assets-manifest.js"
 
-                writeFileSync(browserAssetsPath, browserAssets)
+                writeFileSync(join(ctx.root, browserAssetsModulePath), browserAssetsModuleContent)
 
                 if (ctx.command === "dev") {
-                    restartServer(ctx.serverBuild!.headStorageOutput, ctx.serverBuild!.pageOutputs)
+                    const servable = await createDevServable(ctx.root, ctx.serverBuild!.headStorageOutput, ctx.serverBuild!.pageOutputs)
+                    if (ctx.testing?.resolveDevServable) {
+                        ctx.testing.resolveDevServable(servable)
+                    } else {
+                        listenAndServe(servable)
+                    }
                 } else if (ctx.command === "build") {
-                    console.info(styleText("bgGreen", "\n Generating pages..."))
-                    await generateStaticPages(ctx.serverBuild!.headStorageOutput, ctx.serverBuild!.pageOutputs)
+                    if (ctx.testing === undefined) {
+                        console.info(styleText("bgGreen", "\n Generating pages..."))
+                    }
+                    await generateStaticPages(ctx.root, ctx.serverBuild!.headStorageOutput, ctx.serverBuild!.pageOutputs)
                 }
             })
         }
@@ -299,8 +309,7 @@ export default function (ctx: CaymanBundlingContext) {
 }
 
 let server: ReturnType<typeof serve> | undefined = undefined
-async function restartServer(headStorageOutput: string, pageOutputs: PageOutput[]) {
-    const devServer = await createDevServer(headStorageOutput, pageOutputs)
+async function listenAndServe(servable: Servable) {
     if (server) {
         await new Promise(resolve => {
             server!.close(resolve)
@@ -310,7 +319,7 @@ async function restartServer(headStorageOutput: string, pageOutputs: PageOutput[
     }
     server = serve({
         async fetch(request) {
-            return await devServer.fetch(request).catch(logFetchError)
+            return await servable.fetch(request).catch(logFetchError)
         },
         overrideGlobalObjects: false,
     }, address => console.log(`Server is running on http://${address.address === "::" ? "localhost" : address.address}:${address.port}`))

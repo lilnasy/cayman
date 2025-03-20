@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs"
+import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import server from "../plugins/server-build.ts"
 import browser from "../plugins/browser-build.ts"
@@ -9,6 +11,13 @@ import type { CaymanBundlingContext } from "../types.d.ts"
 export default function (ctx: CaymanBundlingContext) {
     const defaultCommonConfig = commonConfig(ctx)
     const { browser: _, server: userServerConfig, ...userCommonConfig } = ctx.config ?? {}
+    const entryPoints = [
+        "./pages/**/page.tsx",
+        fileURLToPath(import.meta.resolve("../runtime/head-storage.ts"))
+    ]
+    if (existsSync(join(ctx.root, "./pages/not-found.tsx"))) {
+        entryPoints.push("./pages/not-found.tsx")
+    }
     return {
         ...defaultCommonConfig,
         platform: "node",
@@ -17,7 +26,7 @@ export default function (ctx: CaymanBundlingContext) {
         packages: "external",
         ...userCommonConfig,
         ...userServerConfig,
-        entryPoints: ["./pages/**/page.tsx", fileURLToPath(import.meta.resolve("../runtime/head-storage.ts"))],
+        entryPoints,
         loader: {
             ...defaultCommonConfig.loader,
             // ...defaultServerConfig.loader,

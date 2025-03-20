@@ -11,15 +11,17 @@ export default function (ctx: CaymanBundlingContext) {
         setup(build) {
             build.onStart(() => {
                 if (ctx.command === "build") {
-                    console.info(styleText("bgGreen", "\n Building server assets..."))
+                    if (ctx.testing === undefined) {
+                        console.info(styleText("bgGreen", "\n Building server assets..."))
+                    }
                 }
-                rmSync(".cayman/builder", { recursive: true, force: true })
-                rmSync(".cayman/site", { recursive: true, force: true })
-                mkdirSync(".cayman/types", { recursive: true })
-                copyFileSync(resolve("../runtime/css-imports.d.ts"),       ".cayman/types/css-imports.d.ts")
-                copyFileSync(resolve("../runtime/import-attributes.d.ts"), ".cayman/types/import-attributes.d.ts")
-                copyFileSync(resolve("../runtime/import-meta.d.ts"),       ".cayman/types/import-meta.d.ts")
-                copyFileSync(resolve("../runtime/jsx.d.ts"),               ".cayman/types/jsx.d.ts")
+                rmSync(join(ctx.root, ".cayman/builder"), { recursive: true, force: true })
+                rmSync(join(ctx.root, ".cayman/site"), { recursive: true, force: true })
+                mkdirSync(join(ctx.root, ".cayman/types"), { recursive: true })
+                copyFileSync(resolve("../runtime/css-imports.d.ts"),       join(ctx.root, ".cayman/types/css-imports.d.ts"))
+                copyFileSync(resolve("../runtime/import-attributes.d.ts"), join(ctx.root, ".cayman/types/import-attributes.d.ts"))
+                copyFileSync(resolve("../runtime/import-meta.d.ts"),       join(ctx.root, ".cayman/types/import-meta.d.ts"))
+                copyFileSync(resolve("../runtime/jsx.d.ts"),               join(ctx.root, ".cayman/types/jsx.d.ts"))
                 function resolve(path: string) {
                     return new URL(import.meta.resolve(path))
                 }
@@ -28,7 +30,7 @@ export default function (ctx: CaymanBundlingContext) {
             // so we workaround assuming that node_modules is located in cwd/
             build.onResolve({ filter: /^cayman\/HeadElements$/ }, args => {
                 return {
-                    path: join(process.cwd(), "./node_modules/cayman/runtime/HeadElements.tsx"),
+                    path: join(ctx.root, "./node_modules/cayman/runtime/HeadElements.tsx"),
                     external: false
                 }
             })
@@ -65,13 +67,13 @@ export default function (ctx: CaymanBundlingContext) {
                 const staticFiles: string[] = []
 
                 const headStorageEntrypoint = relative(
-                    process.cwd(),
+                    ctx.root,
                     fileURLToPath(import.meta.resolve("../runtime/head-storage.ts"))
                 ).replaceAll("\\", "/")
 
                 let headStorageOutput: string | undefined = undefined
 
-                mkdirSync(".cayman/site/_cayman", { recursive: true })
+                mkdirSync(join(ctx.root, ".cayman/site/_cayman"), { recursive: true })
                 for (const outputPath in outputs) {
                     const output = outputs[outputPath]
                     if (output && output.entryPoint === headStorageEntrypoint) {
@@ -85,34 +87,48 @@ export default function (ctx: CaymanBundlingContext) {
                                        .replace(".cayman/dev", "/_cayman")
                             : undefined
 
-                        const route = entryPoint.replace(/^pages/, "").replace(/\/page\.tsx$/, "")
+                        if (entryPoint === "pages/not-found.tsx") {
+                            pageOutputs.push({
+                                type: "404",
+                                outputPath,
+                                cssUrl,
+                            })
+                        } else {
+                            const route = entryPoint.replace(/^pages/, "").replace(/\/page\.tsx$/, "")
+    
+                            const regExp =
+                                "^" +
+                                route
+                                    .replaceAll(/\[\.\.\.([^\]]+)\]/g, (_: string, group: string) => `(?<${group.replace(/^\.\.\./, "")}>.+)`)
+                                    .replaceAll(/\[([^\]]+)\]/g, (_: string, group: string) =>  `(?<${group}>[^/]+)`)
+                                    .replaceAll("/", "\\/") +
+                                "\\\/?$"
+    
+                            pageOutputs.push({
+                                type: "normal",
+                                route,
+                                regExp,
+                                outputPath,
+                                cssUrl,
+                            })
+                        }
 
-                        const regexp =
-                            "^" +
-                            route
-                                .replaceAll(/\[\.\.\.([^\]]+)\]/g, (_: string, group: string) => `(?<${group.replace(/^\.\.\./, "")}>.+)`)
-                                .replaceAll(/\[([^\]]+)\]/g, (_: string, group: string) =>  `(?<${group}>[^/]+)`)
-                                .replaceAll("/", "\\/") +
-                            "\\\/?$"
-
-                        pageOutputs.push({
-                            route,
-                            regexp,
-                            outputPath,
-                            cssUrl,
-                        })
                     }
 
                     if (
                         outputPath.endsWith(".css") ||
                         outputPath.endsWith(".css.map")
                     ) {
-                        renameSync(outputPath, outputPath
+                        const moveTo = outputPath
                             .replace(".cayman/builder", ".cayman/site/_cayman")
-                            .replace(".cayman/dev", ".cayman/site/_cayman"))
+                            .replace(".cayman/dev",     ".cayman/site/_cayman")
+
+                        renameSync(outputPath, join(ctx.root, moveTo))
+
                         staticFiles.push(outputPath
                             .replace(".cayman/builder", "/_cayman")
-                            .replace(".cayman/dev", "/_cayman"))
+                            .replace(".cayman/dev",     "/_cayman")
+                        )
                     }
                 }
 
