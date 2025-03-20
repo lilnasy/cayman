@@ -277,7 +277,12 @@ export default function (ctx: PluginContext) {
                     ).join(",\n")}
                     }`.replaceAll("\n                    ", "\n")
 
-                writeFileSync(".cayman/builder/browser-assets-manifest.js", browserAssets)
+                const browserAssetsPath =
+                    ctx.command === "dev"
+                        ? ".cayman/dev/browser-assets-manifest.js"
+                        : ".cayman/builder/browser-assets-manifest.js"
+
+                writeFileSync(browserAssetsPath, browserAssets)
 
                 if (ctx.command === "dev") {
                     restartServer()
@@ -293,7 +298,7 @@ export default function (ctx: PluginContext) {
 let server: ReturnType<typeof serve> | undefined = undefined
 async function restartServer() {
     // a timestamp is added to the module specifier to prevent an older, previously-loaded version of the module from being loaded
-    const serverModule = await import(pathToFileURL(join(process.cwd(), ".cayman/builder/server.js")).href + "?" + Date.now())
+    const serverModule = await import(pathToFileURL(join(process.cwd(), ".cayman/dev/server.js")).href + "?" + Date.now())
     if (server) {
         await new Promise(resolve => {
             server!.close(resolve)

@@ -80,6 +80,7 @@ export default function (ctx: PluginContext) {
 
                         const cssUrl = cssBundle
                             ? cssBundle.replace(".cayman/builder", "/_cayman")
+                                       .replace(".cayman/dev", "/_cayman")
                             : undefined
 
                         const route = entryPoint.replace(/^pages/, "").replace(/\/page\.tsx$/, "")
@@ -96,7 +97,7 @@ export default function (ctx: PluginContext) {
                             route,
                             regexp,
                             outputPath,
-                            path: outputPath.replace(".cayman/builder/", "./"),
+                            path: outputPath.replace(".cayman/builder/", "./").replace(".cayman/dev/", "./"),
                             cssUrl,
                         })
                     }
@@ -105,8 +106,12 @@ export default function (ctx: PluginContext) {
                         outputPath.endsWith(".css") ||
                         outputPath.endsWith(".css.map")
                     ) {
-                        renameSync(outputPath, outputPath.replace(".cayman/builder", ".cayman/site/_cayman"))
-                        staticFiles.push(outputPath.replace(".cayman/builder", "/_cayman"))
+                        renameSync(outputPath, outputPath
+                            .replace(".cayman/builder", ".cayman/site/_cayman")
+                            .replace(".cayman/dev", ".cayman/site/_cayman"))
+                        staticFiles.push(outputPath
+                            .replace(".cayman/builder", "/_cayman")
+                            .replace(".cayman/dev", "/_cayman"))
                     }
                 }
 
@@ -121,7 +126,7 @@ export default function (ctx: PluginContext) {
                 }
 
                 if (ctx.command === "dev") {
-                    writeFileSync(".cayman/builder/server.js", createServerModule(headStorageOutput!, pageOutputs))
+                    writeFileSync(".cayman/dev/server.js", createServerModule(headStorageOutput!, pageOutputs))
                 }
             })
         }
@@ -142,6 +147,13 @@ function createServerModule(headStorageOutput: string, pageOutputs: PageOutput[]
 
         const staticFiles = new Set()
         readdir(new URL(import.meta.resolve("../site")), { withFileTypes: true, recursive: true }).then(dirEntries => {
+            for (const entry of dirEntries) {
+                if (entry.isFile() == false) continue
+                staticFiles.add((relative(fileURLToPath(import.meta.resolve("../site")), entry.parentPath).replaceAll("\\\\", "/") + "/" + entry.name).replace(/^\\/?/, "\\/"))
+            }
+        })
+
+        readdir(new URL(import.meta.resolve("../../public")), { withFileTypes: true, recursive: true }).then(dirEntries => {
             for (const entry of dirEntries) {
                 if (entry.isFile() == false) continue
                 staticFiles.add((relative(fileURLToPath(import.meta.resolve("../site")), entry.parentPath).replaceAll("\\\\", "/") + "/" + entry.name).replace(/^\\/?/, "\\/"))

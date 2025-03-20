@@ -1,15 +1,20 @@
 import type { Plugin } from "esbuild"
 import { mkdir, readdir, copyFile } from "node:fs/promises"
 import { join } from "node:path"
+import type { PluginContext } from "../types.d.ts"
 
-export default {
-    name: "public-folder",
-    setup(build) {
-        build.onEnd(async () => {
-            await copyDir("public", ".cayman/site")
-        })
-    }
-} satisfies Plugin
+export default function (ctx: PluginContext) {
+    return {
+        name: "public-folder",
+        setup(build) {
+            if (ctx.command === "build") {
+                build.onEnd(async () => {
+                    await copyDir("public", ".cayman/builder")
+                })
+            }
+        }
+    } satisfies Plugin
+}
 
 async function copyDir(src: string, dest: string) {
     await mkdir(dest, { recursive: true })

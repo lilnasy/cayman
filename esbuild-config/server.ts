@@ -6,23 +6,15 @@ import publicFolder from "../plugins/public-folder.ts"
 import type { BuildOptions } from "esbuild"
 import type { PluginContext } from "../types.d.ts"
 
-const defaultServerConfig = {
-    platform: "node",
-    target: "es2024",
-    outdir: ".cayman/builder",
-    packages: "external",
-    define: {
-        "import.meta.server": "true",
-        "import.meta.browser": "false",
-    },
-} as const satisfies BuildOptions
-
 export default function (ctx: PluginContext) {
     const defaultCommonConfig = commonConfig(ctx)
     const { browser: _, server: userServerConfig, ...userCommonConfig } = ctx.config ?? {}
     return {
         ...defaultCommonConfig,
-        ...defaultServerConfig,
+        platform: "node",
+        target: "es2024",
+        outdir: ctx.command === "dev" ? ".cayman/dev" : ".cayman/builder",
+        packages: "external",
         ...userCommonConfig,
         ...userServerConfig,
         entryPoints: ["./pages/**/page.tsx", fileURLToPath(import.meta.resolve("../runtime/head-storage.ts"))],
@@ -33,7 +25,7 @@ export default function (ctx: PluginContext) {
             ...(userServerConfig?.loader ?? {}),
         },
         plugins: [
-            publicFolder,
+            publicFolder(ctx),
             server(ctx),
             browser(ctx),
             ...(userCommonConfig.plugins ?? []),
@@ -41,7 +33,8 @@ export default function (ctx: PluginContext) {
         ],
         define: {
             ...defaultCommonConfig.define,
-            ...defaultServerConfig.define,
+            "import.meta.server": "true",
+            "import.meta.browser": "false",
             ...userCommonConfig.define,
             ...userServerConfig?.define,
         },
