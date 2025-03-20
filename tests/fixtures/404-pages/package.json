@@ -1,0 +1,8 @@
+{
+    "name": "@test/404",
+    "type": "module",
+    "dependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0"
+    }
+}
