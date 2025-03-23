@@ -247,7 +247,12 @@ export default function (ctx: CaymanBundlingContext) {
                     const { entryPoint, imports } = outputs[output]!
                     const clientComponent = entryPoint && clientComponentsMap.get(entryPoint)
                     if (entryPoint === clientComponentLoaderEntrypoint) {
-                        clientComponentLoaderBuiltChunk = output.replace(".cayman/site", "")
+                        clientComponentLoaderBuiltChunk = output.replace(
+                            ctx.command === "dev"
+                                ? ".cayman/dev/serve"
+                                : ".cayman/site",
+                            ""
+                        )
                     }
                     if (clientComponent) {
                         const preloadableModules = new Set<string>()
@@ -258,7 +263,14 @@ export default function (ctx: CaymanBundlingContext) {
                                 const imported = toSearch.pop()
                                 if (imported && imported.kind === "import-statement" && outputs[imported.path]) {
                                     seen.add(imported.path)
-                                    preloadableModules.add(imported.path.replace(".cayman/site", ""))
+                                    preloadableModules.add(
+                                        imported.path.replace(
+                                            ctx.command === "dev"
+                                                ? ".cayman/dev/serve"
+                                                : ".cayman/site",
+                                            ""
+                                        )
+                                    )
                                     for (const impor of outputs[imported.path]!.imports) {
                                         if (seen.has(impor.path) === false) {
                                             toSearch.push(impor)
@@ -267,7 +279,16 @@ export default function (ctx: CaymanBundlingContext) {
                                 }
                             }
                         }
-                        clientComponentBuiltChunks.push([clientComponent.id, output.replace(".cayman/site", ""), Array.from(preloadableModules)])
+                        clientComponentBuiltChunks.push([
+                            clientComponent.id,
+                            output.replace(
+                                ctx.command === "dev"
+                                    ? ".cayman/dev/serve"
+                                    : ".cayman/site",
+                                ""
+                            ),
+                            Array.from(preloadableModules)
+                        ])
                     }
                 }
 

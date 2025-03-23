@@ -29,7 +29,7 @@ export async function createDevServable(root: string, headStorageModulePath: str
             }
 
             const [ inPublicFolder, inBuiltFolder ] = await Promise.all(
-                ["public", ".cayman/site"]
+                ["public", ".cayman/dev/serve"]
                     .map(folder => join(root, folder + pathname))
                     .map(path => stat(path)
                         .then(stats => stats.isFile() ? path : undefined)

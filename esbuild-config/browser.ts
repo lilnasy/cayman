@@ -5,7 +5,6 @@ import type { CaymanBundlingContext } from "../types.d.ts"
 const defaultBrowserConfig = {
     platform: "browser",
     target: "esnext",
-    outdir: ".cayman/site/_cayman",
     define: {
         "import.meta.server": "false",
         "import.meta.browser": "true",
@@ -18,6 +17,7 @@ export default function (ctx: CaymanBundlingContext) {
     return {
         ...defaultCommonConfig,
         ...defaultBrowserConfig,
+        outdir: ctx.command === "dev" ? ".cayman/dev/serve" : ".cayman/site/_cayman",
         ...userCommonConfig,
         ...userBrowserConfig,
         loader: {

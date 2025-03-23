@@ -16,6 +16,7 @@ export default function (ctx: CaymanBundlingContext) {
                     }
                 }
                 rmSync(join(ctx.root, ".cayman/builder"), { recursive: true, force: true })
+                rmSync(join(ctx.root, ".cayman/dev"), { recursive: true, force: true })
                 rmSync(join(ctx.root, ".cayman/site"), { recursive: true, force: true })
                 mkdirSync(join(ctx.root, ".cayman/types"), { recursive: true })
                 copyFileSync(resolve("../runtime/css-imports.d.ts"),       join(ctx.root, ".cayman/types/css-imports.d.ts"))
@@ -73,7 +74,14 @@ export default function (ctx: CaymanBundlingContext) {
 
                 let headStorageOutput: string | undefined = undefined
 
-                mkdirSync(join(ctx.root, ".cayman/site/_cayman"), { recursive: true })
+                if (ctx.command === "dev") {
+                    mkdirSync(join(ctx.root, ".cayman/dev/serve"), { recursive: true })
+                }
+
+                if (ctx.command === "build") {
+                    mkdirSync(join(ctx.root, ".cayman/site/_cayman"), { recursive: true })
+                }
+
                 for (const outputPath in outputs) {
                     const output = outputs[outputPath]
                     if (output && output.entryPoint === headStorageEntrypoint) {
@@ -83,8 +91,9 @@ export default function (ctx: CaymanBundlingContext) {
                         const { entryPoint, cssBundle } = output
 
                         const cssUrl = cssBundle
-                            ? cssBundle.replace(".cayman/builder", "/_cayman")
-                                       .replace(".cayman/dev", "/_cayman")
+                            ? ctx.command === "dev"
+                                ? cssBundle.replace(".cayman/dev", "")
+                                : cssBundle.replace(".cayman/builder", "/_cayman")
                             : undefined
 
                         if (entryPoint === "pages/not-found.tsx") {
@@ -121,7 +130,7 @@ export default function (ctx: CaymanBundlingContext) {
                     ) {
                         const moveTo = outputPath
                             .replace(".cayman/builder", ".cayman/site/_cayman")
-                            .replace(".cayman/dev",     ".cayman/site/_cayman")
+                            .replace(".cayman/dev",     ".cayman/dev/serve")
 
                         renameSync(outputPath, join(ctx.root, moveTo))
 
